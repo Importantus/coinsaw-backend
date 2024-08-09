@@ -1,0 +1,459 @@
+openapi: 3.0.3
+info:
+  title: WiseSplit
+  version: "0.1"
+  description: |-
+    WiseSplit is a service that allows you to split expenses with your friends.
+    This api is primarily used to create and manage groups, share tokens and sessions. 
+    The data of the groups is stored in a changelog that can be accessed and modified through this api.
+tags:
+  - name: group
+    description: Groups are the place where you can split expenses with your friends
+  - name: share
+    description: Create and manage share tokens
+  - name: sessions
+    description: Create and manage sessions
+  - name: data
+    description: Endpoints to get or add data from or to the changelog
+servers:
+  - url: "{protocol}://{host}:{port}/{endpoint}"
+    description: Development server
+    variables:
+      protocol:
+        enum:
+          - http
+          - https
+        default: http
+      host:
+        default: localhost
+      port:
+        default: "8080"
+      endpoint:
+        default: v1
+components:
+  securitySchemes:
+    adminToken:
+      description: Admin tokens are associated with an admin session. They can be used to create and manage other sessions and share tokens.
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    userToken:
+      description: User tokens are associated with a user session. They can be used to access and add to the data of a group.
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    shareToken:
+      description: Share tokens can be used to create a new session. They can either be used to create a new user session or a new admin session.
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    recoveryToken:
+      description: Recovery tokens can be used to create a new admin session. They should be stored securely and only be used in case of emergency.
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /group:
+    post:
+      tags:
+        - group
+      summary: Create a new group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The id of the group is created localy.
+                    type: string
+                    format: uuid
+                  recoveryToken:
+                    description: This token can be used to generate new admin tokens if access to the group is lost. It should be stored securely and only be used in case of emergency.
+                    type: string
+                    format: JWT
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "409":
+          description: Group already exists
+        "500":
+          description: Internal server error
+    delete:
+      tags:
+        - group
+      summary: Delete a group
+      security:
+        - adminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the group to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Group deleted
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Group not found
+        "500":
+          description: Internal server error
+  /share:
+    post:
+      tags:
+        - share
+      summary: Create a new share token
+      security:
+        - adminToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                admin:
+                  description: If true, the share token can be used to create a new admin session
+                  type: boolean
+                maxSessions:
+                  description: The number of sessions that can be created with this share token. If not provided, the share token can be used to create an unlimited number of sessions.
+                  type: string
+                  format: number
+      responses:
+        "201":
+          description: Share token created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    description: The share token that can be used to access the group
+                    type: string
+                    format: JWT
+                  expiration:
+                    description: The ISO 8601 date and time when the share token expires
+                    type: string
+                    format: date-time
+                  admin:
+                    description: If true, the share token can be used to create a new admin session
+                    type: boolean
+                  id:
+                    description: The id of the share token
+                    type: string
+                    format: uuid
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
+    get:
+      tags:
+        - share
+      summary: Get all active share tokens
+      security:
+        - adminToken: []
+      # parameters:
+      #   - name: id
+      #     in: path
+      #     required: true
+      #     description: The id of the group to get the share token for
+      #     schema:
+      #       type: string
+      #       format: uuid
+      responses:
+        "200":
+          description: Share token found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        admin:
+                          description: If true, the share token can be used to create a new admin session
+                          type: boolean
+                        id:
+                          description: The id of the share token
+                          type: string
+                          format: uuid
+                        token:
+                          description: The share token that can be used to access the group
+                          type: string
+                          format: JWT
+                        expiration:
+                          description: The ISO 8601 date and time when the share token expires
+                          type: string
+                          format: date-time
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Share token not found
+        "500":
+          description: Internal server error
+    delete:
+      tags:
+        - share
+      summary: Delete a share token
+      security:
+        - adminToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the share token to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Share token deleted
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Share token not found
+        "500":
+          description: Internal server error
+  /sessions:
+    post:
+      tags:
+        - sessions
+      summary: Create a new session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  description: The share token that can be used to access the group. This can either be a share token or an recovery token. If the share token has admin rights, a new admin session is created.
+                  type: string
+                  format: JWT
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    description: The session token that can be used to access the group
+                    type: string
+                    format: JWT
+                  admin:
+                    description: If true, the session token is an admin token
+                    type: boolean
+                  id:
+                    description: The id of the session
+                    type: string
+                    format: uuid
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Group not found
+        "500":
+          description: Internal server error
+    get:
+      tags:
+        - sessions
+      summary: Get all active sessions
+      security:
+        - adminToken: []
+      # parameters:
+      #   - name: id
+      #     in: path
+      #     required: true
+      #     description: The id of the group to get the sessions for
+      #     schema:
+      #       type: string
+      #       format: uuid
+      responses:
+        "200":
+          description: Sessions found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        admin:
+                          description: If true, the session token is an admin token
+                          type: boolean
+                        id:
+                          description: The id of the session
+                          type: string
+                          format: uuid
+                        token:
+                          description: The session token that can be used to access the group
+                          type: string
+                          format: JWT
+                        lastAccess:
+                          description: The timestamp of the last access to the session
+                          type: string
+                          format: date-time
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Sessions not found
+        "500":
+          description: Internal server error
+    delete:
+      tags:
+        - sessions
+      summary: Delete a session
+      security:
+        - userToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the session to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Session deleted
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Session not found
+        "500":
+          description: Internal server error
+  /data:
+    get:
+      tags:
+        - data
+      summary: Get data from the changelog of a group
+      security:
+        - adminToken: []
+        - userToken: []
+      parameters:
+        # - name: id
+        #   in: path
+        #   required: true
+        #   description: The id of the group to get the data from
+        #   schema:
+        #     type: string
+        #     format: uuid
+        - name: from
+          in: query
+          required: false
+          description: The timestamp from when to get the data. If not provided, the data from the beginning of the changelog is returned.
+          schema:
+            type: number
+            format: timestamp
+        - name: to
+          in: query
+          required: false
+          description: The timestamp to when to get the data. If not provided, the data until the end of the changelog is returned.
+          schema:
+            type: number
+            format: timestamp
+      responses:
+        "200":
+          description: Data found
+          content:
+            application/json:
+              schema:
+                $ref: "./schemas/changelog.json"
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Data not found
+        "500":
+          description: Internal server error
+    post:
+      tags:
+        - data
+      summary: Add data to the changelog of a group
+      security:
+        - adminToken: []
+        - userToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the group to add the data to
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./schemas/changelog.json"
+      responses:
+        "201":
+          description: Data added
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Group not found
+        "500":
+          description: Internal server error

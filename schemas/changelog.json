@@ -1,0 +1,155 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "array",
+    "title": "ChangeLog",
+    "description": "A change log of the app. It represents a list of changes in the state of the app.",
+    "items": {
+        "title": "Entry",
+        "description": "An entry in the change log of the app. It represents a change in the state of the app.",
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The unique identifier of the change. It should be a UUID created by the client."
+            },
+            "groupId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The unique identifier of the group that the change belongs to. It should be a UUID created by the client."
+            },
+            "type": {
+                "type": "string",
+                "description": "The type of the entity that was changed.",
+                "enum": [
+                    "SETTINGS",
+                    "USER",
+                    "BILL"
+                ]
+            },
+            "action": {
+                "type": "string",
+                "description": "The action that was performed on the entity. Deletes are not possible and should be represented by an update with a deleted flag.",
+                "enum": [
+                    "CREATE",
+                    "UPDATE"
+                ]
+            },
+            "timestamp": {
+                "type": "number",
+                "description": "The timestamp when the change was actually made. It is used to order the changes in the log."
+            },
+            "syncTimestamp": {
+                "type": "number",
+                "description": "The timestamp when the change was synced with the server. It is used to detect conflicts when syncing changes between devices."
+            },
+            "payload": {
+                "description": "The payload of the change. It contains the actual data that was changed.",
+                "oneOf": [
+                    {
+                        "GroupSettings": {
+                            "type": "object",
+                            "description": "The settings of the group.",
+                            "properties": {
+                                "currency": {
+                                    "type": "string",
+                                    "description": "The currency of the group. It should be a 3-letter ISO 4217 currency code."
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the group."
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "User": {
+                            "type": "object",
+                            "description": "A user of the app. It represents a person that can participate in bills.",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "isDeleted": {
+                                    "type": "boolean",
+                                    "description": "A flag that indicates if the user was deleted."
+                                }
+                            },
+                            "required": [
+                                "id"
+                            ]
+                        }
+                    },
+                    {
+                        "Bill": {
+                            "type": "object",
+                            "description": "A bill of the group. It can either represent an expense made by one user and split with others or a transaction made from one user to another.",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the bill. E.g. 'Dinner at the restaurant'."
+                                },
+                                "amount": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "multipleOf": 0.01,
+                                    "description": "The amount of the bill. It should be a positive number and only contain two decimal places."
+                                },
+                                "isDeleted": {
+                                    "type": "boolean",
+                                    "description": "A flag that indicates if the bill was deleted."
+                                },
+                                "payerId": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "description": "If the bill is an expense thats shared by multiple users, this is the id of the user who paid the bill. If the bill is a transaction between two users, this is the id of the user who receives money"
+                                },
+                                "participants": {
+                                    "type": "array",
+                                    "description": "The participants of the bill. It contains the user ids and the percentage of the bill that they have to pay. If the bill is a transaction between two users, this array should contain exactly two participants.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "userId": {
+                                                "type": "string",
+                                                "format": "uuid"
+                                            },
+                                            "percentage": {
+                                                "type": "number",
+                                                "minimum": 0,
+                                                "maximum": 1
+                                            }
+                                        },
+                                        "required": [
+                                            "userId",
+                                            "percentage"
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "id"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "required": [
+            "id",
+            "type",
+            "action",
+            "timestamp",
+            "syncTimestamp",
+            "payload"
+        ]
+    }
+}
