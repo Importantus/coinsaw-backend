@@ -2,7 +2,6 @@ import 'dotenv/config'
 import * as express from "express";
 import * as swaggerUi from "swagger-ui-express";
 import * as cors from "cors";
-import * as http from "http";
 import { AppDataSource } from "./data-source"
 import { environment } from './utils/environment';
 import { notFound } from './middleware/notFound';
@@ -19,7 +18,6 @@ import { logger } from './utils/logger';
 const port = environment.backendPort;
 
 const app = express();
-// const server = http.createServer(app);
 
 enum APIAccess {
     INTERNAL = "internal", // The access control is done by the router

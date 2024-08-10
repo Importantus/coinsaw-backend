@@ -1,5 +1,5 @@
 import { WebSocket, WebSocketServer } from 'ws';
-import { IncomingMessage, request, Server } from 'http';
+import { IncomingMessage, Server } from 'http';
 import { getSession } from '../../middleware/auth';
 import { logger } from '../../utils/logger';
 

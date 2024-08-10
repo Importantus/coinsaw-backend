@@ -2,10 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import APIError from "../utils/apiError";
 import * as jwt from "jsonwebtoken";
 import { environment } from "../utils/environment";
-import * as bcrypt from "bcrypt";
 import { AppDataSource } from "../data-source";
 import { Session } from "../entity/Session";
-import { group } from "console";
 import { SessionTokenJWT } from "../types";
 import { logger } from "../utils/logger";
 
