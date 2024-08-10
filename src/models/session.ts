@@ -26,6 +26,11 @@ async function validateToken(token: string): Promise<Share | Group> {
     });
 
     if (share && share.active && share.sessions.length < share.maxSessions) {
+        // If with the new session the max sessions would be reached, deactivate the share
+        if (share.sessions.length + 1 >= share.maxSessions) {
+            share.active = false;
+            await shareRepository.save(share);
+        }
         return share;
     } else {
         const groupRepository = AppDataSource.getRepository(Group);
