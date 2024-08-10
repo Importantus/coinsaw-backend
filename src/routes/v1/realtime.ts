@@ -1,43 +1,56 @@
 import { WebSocket, WebSocketServer } from 'ws';
-import { server } from '../..';
-import { IncomingMessage, request } from 'http';
-import log, { Scope } from '../../utils/logger';
+import { IncomingMessage, request, Server } from 'http';
 import { getSession } from '../../middleware/auth';
-
-const wss = new WebSocketServer({ server, path: "v1/realtime" });
+import { logger } from '../../utils/logger';
 
 const clients = new Map<string, WebSocket[]>();
 
-wss.on('connection', (ws) => {
-    ws.on('error', (error) => {
-        log(`Error: ${error}`, Scope.REALTIME);
-    })
+export function initWebsocket(server: Server) {
+    const wss = new WebSocketServer({ server, path: "v1/realtime" })
 
-    ws.on('close', () => {
-        clients.forEach((clientList, groupId) => {
-            clients.set(groupId, clientList.filter(client => client !== ws));
-        });
-    })
-})
+    logger.success('Websocket server successfully initialized');
 
-server.on('upgrade', (request, socket, head) => {
-    socket.on('error', onSocketError)
+    wss.on('connection', (ws) => {
+        logger.debug('New websocket connection successfully established');
 
-    authenticate(request, (err, groupId) => {
-        if (err || !groupId) {
-            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-            socket.destroy();
-            return;
-        }
+        ws.on('error', (error) => {
+            logger.error(error);
+        })
 
-        socket.removeListener('error', onSocketError);
-
-        wss.handleUpgrade(request, socket, head, (ws) => {
-            clients.set(groupId, [...(clients.get(groupId) ?? []), ws]);
-            wss.emit('connection', ws)
+        ws.on('close', () => {
+            clients.forEach((clientList, groupId) => {
+                clients.set(groupId, clientList.filter(client => client !== ws));
+            });
         })
     })
-})
+
+    server.on('upgrade', (request, socket, head) => {
+        logger.debug('Handling new websocket connection');
+
+        socket.on('error', onSocketError)
+
+        authenticate(request, (err, groupId) => {
+            if (err || !groupId) {
+                socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+                socket.destroy();
+                if (err) {
+                    logger.error(err);
+                }
+                return;
+            }
+
+            logger.debug('Authenticated new websocket connection');
+
+            socket.removeListener('error', onSocketError);
+
+            wss.handleUpgrade(request, socket, head, (ws) => {
+                logger.debug('Handling new websocket connection upgrade');
+                clients.set(groupId, [...(clients.get(groupId) ?? []), ws]);
+                wss.emit('connection', ws, request)
+            })
+        })
+    })
+}
 
 export function broadcast(groupId: string, message: string) {
     const groupClients = clients.get(groupId);
@@ -50,21 +63,21 @@ export function broadcast(groupId: string, message: string) {
 }
 
 function onSocketError(error: Error) {
-    log(`Error: ${error}`, Scope.REALTIME);
+    logger.error(error);
 }
 
 async function authenticate(request: IncomingMessage, callback: (err?: Error, groupId?: string) => void) {
     try {
-        const token = request.headers.authorization!.split(" ")[1];
+        const token = request.url?.split('token=')[1];
 
         const session = await getSession(token);
 
         if (session) {
             callback(undefined, session.group.id);
         } else {
-            callback(new Error('Unauthorized'));
+            callback(new Error('Unauthorized websocket connection attempt'));
         }
     } catch {
-        callback(new Error('Unauthorized'));
+        callback(new Error('Error while authenticating a new websocket connection'));
     }
 }

@@ -1,11 +1,10 @@
 import 'dotenv/config'
 import * as express from "express";
-import swaggerUi from "swagger-ui-express";
-import cors from "cors";
+import * as swaggerUi from "swagger-ui-express";
+import * as cors from "cors";
 import * as http from "http";
 import { AppDataSource } from "./data-source"
 import { environment } from './utils/environment';
-import log, { Level, Scope } from './utils/logger';
 import { notFound } from './middleware/notFound';
 import { errorHandler } from './middleware/errorHandler';
 import { adminAuth, privateAuth } from './middleware/auth';
@@ -14,11 +13,13 @@ import v1GroupRouter from './routes/v1/groups';
 import v1ShareRouter from './routes/v1/share';
 import v1SessionRouter from './routes/v1/session';
 import v1DataRouter from './routes/v1/data';
+import { initWebsocket } from './routes/v1/realtime';
+import { logger } from './utils/logger';
 
 const port = environment.backendPort;
 
 const app = express();
-export const server = http.createServer(app);
+// const server = http.createServer(app);
 
 enum APIAccess {
     INTERNAL = "internal", // The access control is done by the router
@@ -45,7 +46,7 @@ const versions: APIVersion[] = [
     {
         path: "/v1",
         name: "v1",
-        apiDoc: require("../openapi.yaml"),
+        // apiDoc: require("../openapi.json"),
         resources: [
             {
                 path: "/group",
@@ -78,9 +79,9 @@ const versions: APIVersion[] = [
 async function main() {
     try {
         await AppDataSource.initialize()
-        console.log("Database initialized")
+        logger.success('Database connected')
     } catch (error) {
-        log(error, Scope.DATABASE, Level.ERROR);
+        logger.error('Database connection failed')
         throw error
     }
 
@@ -128,11 +129,13 @@ async function main() {
     app.use(notFound);
     app.use(errorHandler);
 
-    app.listen(port, () => {
-        log(`Server started at http://localhost:${port}`, Scope.REST_API);
+    const server = app.listen(port, () => {
+        logger.ready(`API-Server started on port ${port}`);
     })
+
+    initWebsocket(server)
 }
 
 main().catch(err => {
-    log(err, Scope.MAIN, Level.ERROR);
+    logger.error(err);
 })

@@ -14,7 +14,7 @@ router.get("/", h(async (req, res) => {
         throw APIError.badRequest(error);
     }
 
-    const data = getDataFromGroup(res.locals.groupId, req.query);
+    const data = await getDataFromGroup(res.locals.groupId, req.query);
 
     res.status(200).json(data);
 }));

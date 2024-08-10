@@ -2,15 +2,22 @@ import * as express from 'express'
 import h from '../../utils/errorHelper'
 import { createSession, deleteSession, getSessions } from '../../models/session';
 import { adminAuth } from '../../middleware/auth';
+import { Session } from '../../entity/Session';
 
 const router = express.Router()
 
 router.post("/", h(async (req, res) => {
-    const token = req.headers.authorization!.split(" ")[1];
+    const token = req.body.token;
 
-    const session = await createSession(token)
+    const [session, sessionToken] = (await createSession(token)) as [Session, string];
 
-    res.status(201).json(session);
+    delete session.group;
+    delete session.share;
+
+    res.status(201).json({
+        ...session,
+        token: sessionToken
+    });
 }));
 
 router.get("/", adminAuth, h(async (req, res) => {
@@ -24,7 +31,7 @@ router.get("/", adminAuth, h(async (req, res) => {
 router.delete("/:id", adminAuth, h(async (req, res) => {
     const id = req.params.id;
 
-    await deleteSession(id);
+    await deleteSession(id, res.locals.groupId);
 
     res.status(204).json();
 }));

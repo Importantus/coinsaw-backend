@@ -1,12 +1,12 @@
 export default class APIError extends Error {
-    status: number;
+    httpStatus: number;
 
     private constructor(message: string, status: number) {
         super(message);
-        this.status = status;
+        this.httpStatus = status;
     }
 
-    toJSON() {
+    get JSON() {
         return {
             message: this.message
         }

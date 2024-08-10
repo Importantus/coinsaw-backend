@@ -2,7 +2,7 @@ import "reflect-metadata"
 import { DataSource } from "typeorm"
 import { environment } from "./utils/environment"
 import { Entry } from "./entity/Entry"
-import { ShareToken } from "./entity/ShareToken"
+import { Share } from "./entity/Share"
 import { Session } from "./entity/Session"
 import { Group } from "./entity/Group"
 
@@ -15,7 +15,7 @@ export const AppDataSource = new DataSource({
     database: environment.dbName,
     synchronize: true,
     logging: false,
-    entities: [Entry, Group, Session, ShareToken],
+    entities: [Entry, Group, Session, Share],
     migrations: [],
     subscribers: [],
 })

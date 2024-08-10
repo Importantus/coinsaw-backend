@@ -1,17 +1,22 @@
 import * as jwt from "jsonwebtoken";
 import { environment } from "../utils/environment";
 import { AppDataSource } from "../data-source";
-import { ShareToken } from "../entity/ShareToken";
+import { Share } from "../entity/Share";
 import APIError from "../utils/apiError";
 import { Session } from "../entity/Session";
+import { ShareTokenJWT } from "../types";
+import { logger } from "../utils/logger";
+import { Group } from "../entity/Group";
+import * as argon2 from "argon2";
 
+async function validateToken(token: string): Promise<Share | Group> {
+    const decoded = jwt.verify(token, environment.jwtSecret) as ShareTokenJWT;
 
-export async function createSession(shareToken: string) {
-    const decoded = jwt.verify(shareToken, environment.jwtSecret) as ShareTokenJWT;
+    logger.debug(JSON.stringify(decoded));
 
-    // Get ShareToken from DB
-    const shareTokenRepository = AppDataSource.getRepository(ShareToken);
-    const shareTokenDB = await shareTokenRepository.findOne({
+    const shareRepository = AppDataSource.getRepository(Share);
+    const share = await shareRepository.findOne({
+        relations: ["sessions", "group"],
         where: {
             id: decoded.tokenId,
             group: {
@@ -20,19 +25,40 @@ export async function createSession(shareToken: string) {
         }
     });
 
-    // Check if num of active sessions is less than maxSessions and if ShareToken is active
-    if (shareToken && shareTokenDB.active && shareTokenDB.sessions.length < shareTokenDB.maxSessions) {
-        // Create new session
-        const sessionTokenRepository = AppDataSource.getRepository(Session);
-        const session = new Session(shareTokenDB);
-
-        return await sessionTokenRepository.save(session);
+    if (share && share.active && share.sessions.length < share.maxSessions) {
+        return share;
     } else {
-        throw APIError.forbidden();
+        const groupRepository = AppDataSource.getRepository(Group);
+        const group = await groupRepository.findOne({
+            where: {
+                id: decoded.groupId
+            }
+        });
+
+        if (group && await argon2.verify(group.recoveryToken, token)) {
+            return group;
+        } else {
+            throw APIError.forbidden();
+        }
     }
 }
 
+export async function createSession(shareToken: string) {
+    logger.debug(`Creating new session`);
+
+    const shareOrGroup = await validateToken(shareToken);
+
+    const sessionTokenRepository = AppDataSource.getRepository(Session);
+    const [session, token] = Session.factory(shareOrGroup);
+
+    await sessionTokenRepository.save(session);
+
+    return [session, token];
+}
+
 export async function getSessions(groupId: string): Promise<Session[]> {
+    logger.debug(`Getting sessions for group ${groupId}`);
+
     const sessionRepository = AppDataSource.getRepository(Session);
 
     return await sessionRepository.find({
@@ -44,12 +70,17 @@ export async function getSessions(groupId: string): Promise<Session[]> {
     });
 }
 
-export async function deleteSession(id: string) {
+export async function deleteSession(id: string, groupId: string) {
+    logger.debug(`Deleting session with id ${id}`);
+
     const sessionRepository = AppDataSource.getRepository(Session);
 
     const session = await sessionRepository.findOne({
         where: {
-            id
+            id,
+            group: {
+                id: groupId
+            }
         }
     });
 

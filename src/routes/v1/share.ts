@@ -4,6 +4,7 @@ import { assert } from 'superstruct';
 import { createShareTokenQuery } from '../../validators/share';
 import APIError from '../../utils/apiError';
 import { createShareToken, deactivateShareToken, getShareTokens } from '../../models/share';
+import { Share } from '../../entity/Share';
 
 const router = express.Router()
 
@@ -14,9 +15,14 @@ router.post("/", h(async (req, res) => {
         throw APIError.badRequest(error);
     }
 
-    const shareToken = await createShareToken(res.locals.groupId, req.body);
+    const [share, token] = (await createShareToken(res.locals.groupId, req.body)) as [Share, string]
 
-    res.status(201).json(shareToken);
+    delete share.group;
+
+    res.status(201).json({
+        ...share,
+        token
+    });
 }));
 
 router.get("/", h(async (req, res) => {
@@ -24,7 +30,7 @@ router.get("/", h(async (req, res) => {
 }));
 
 router.delete("/:id", h(async (req, res) => {
-    await deactivateShareToken(req.params.id);
+    await deactivateShareToken(req.params.id, res.locals.groupId);
     res.status(204).json();
 }));
 

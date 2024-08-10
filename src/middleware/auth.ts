@@ -6,6 +6,8 @@ import * as bcrypt from "bcrypt";
 import { AppDataSource } from "../data-source";
 import { Session } from "../entity/Session";
 import { group } from "console";
+import { SessionTokenJWT } from "../types";
+import { logger } from "../utils/logger";
 
 async function getSessionExpress(req: Request) {
     const token = req.headers.authorization!.split(" ")[1];
@@ -18,6 +20,7 @@ export async function getSession(token: string) {
     const decoded = jwt.verify(token, environment.jwtSecret) as SessionTokenJWT;
 
     const session = await AppDataSource.getRepository(Session).findOne({
+        relations: ["group"],
         where: {
             id: decoded.tokenId,
             group: {
@@ -41,10 +44,11 @@ export async function adminAuth(req: Request, res: Response, next: NextFunction)
             res.locals.groupId = session.group.id;
             next();
         } else {
-            next(APIError.notAuthorized());
+            next(APIError.forbidden());
         }
-    } catch {
-        next(APIError.notAuthorized())
+    } catch (err) {
+        logger.error(err);
+        next(APIError.forbidden())
     }
 }
 
