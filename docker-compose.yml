@@ -12,7 +12,7 @@ services:
     networks:
       - postgres-network
     volumes:
-      - ${PWD}/db-data/:/var/lib/postgresql/data/
+      - /var/lib/postgresql/data/
   
   pgadmin:
     image: dpage/pgadmin4
@@ -27,6 +27,19 @@ services:
       - postgres-network
     volumes:
       - /var/lib/pgadmin/
+
+  client:
+    image: 'node:latest'
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - 8080:8080
+    command: npm run dev
+    depends_on:
+      - database
+    networks:
+      - postgres-network
 
 networks: 
   postgres-network:
