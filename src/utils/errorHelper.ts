@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { logger } from "./logger";
 
 /**
  * This function is a helper function that wraps around a function that throws an error. It catches the error and passes it to the next middleware.
@@ -11,6 +12,7 @@ export default function h(f: (req: Request, res: Response) => void): ((req: Requ
         try {
             await f(req, res);
         } catch (error) {
+            logger.error(error)
             next(error);
         }
     }
