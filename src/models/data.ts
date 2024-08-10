@@ -50,7 +50,7 @@ export async function createData(groupId: string, payload: string) {
                 throw Error();
             } else {
                 logger.debug(new Date(entry.timestamp))
-                broadcast(groupId, entry);
+                broadcast(groupId, JSON.stringify(entry));
                 const entryDB = await Entry.factory(entry.id, new Date(entry.timestamp), entry.groupId, JSON.stringify(entry));
                 await entryRepository.save(entryDB);
             }

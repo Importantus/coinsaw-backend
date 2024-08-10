@@ -6,7 +6,7 @@ import { logger } from '../../utils/logger';
 const clients = new Map<string, WebSocket[]>();
 
 export function initWebsocket(server: Server) {
-    const wss = new WebSocketServer({ server, path: "v1/realtime" })
+    const wss = new WebSocketServer({ noServer: true })
 
     logger.success('Websocket server successfully initialized');
 
@@ -26,6 +26,14 @@ export function initWebsocket(server: Server) {
 
     server.on('upgrade', (request, socket, head) => {
         logger.debug('Handling new websocket connection');
+
+        const pathname = new URL(request.url, `wss://${request.headers.host}`).pathname;
+
+        if (pathname !== '/v1/realtime') {
+            socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+            socket.destroy();
+            return;
+        }
 
         socket.on('error', onSocketError)
 
