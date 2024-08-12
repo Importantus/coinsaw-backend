@@ -3,7 +3,7 @@ import h from '../../utils/errorHelper'
 import { assert } from 'superstruct';
 import { createShareTokenQuery } from '../../validators/share';
 import APIError from '../../utils/apiError';
-import { createShareToken, deactivateShareToken, getShareTokens } from '../../models/share';
+import { createShareToken, deactivateShareToken, getShareTokens, getShareWithToken } from '../../models/share';
 import { Share } from '../../entity/Share';
 
 const router = express.Router()
@@ -27,6 +27,17 @@ router.post("/", h(async (req, res) => {
 
 router.get("/", h(async (req, res) => {
     res.status(200).json(await getShareTokens(res.locals.groupId));
+}));
+
+router.get("/:id", h(async (req, res) => {
+    const [share, token] = await getShareWithToken(req.params.id, res.locals.groupId);
+
+    delete share.group;
+
+    res.status(200).json({
+        ...share,
+        token
+    });
 }));
 
 router.delete("/:id", h(async (req, res) => {
