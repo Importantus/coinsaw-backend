@@ -34,7 +34,7 @@ export async function createShareToken(groupId: string, query: CreateShareTokenQ
         throw APIError.badRequest("Group not found");
     }
 
-    const share = Share.factory(group, query.admin, query.maxSessions);
+    const share = Share.factory(group, query.admin, query.maxSessions, query.name);
 
     await shareTokenRepository.save(share);
 

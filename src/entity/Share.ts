@@ -9,6 +9,9 @@ export class Share {
     id: string
 
     @Column()
+    name: string
+
+    @Column()
     admin: boolean
 
     @Column()
@@ -25,9 +28,10 @@ export class Share {
     @OneToMany(() => Session, session => session.share)
     sessions: Session[]
 
-    static factory(group: Group, admin: boolean, maxSessions: number): Share {
+    static factory(group: Group, admin: boolean, maxSessions: number, name: string): Share {
         const shareToken = new Share();
 
+        shareToken.name = name;
         shareToken.id = uuidv4();
         shareToken.admin = admin;
         shareToken.maxSessions = maxSessions;

@@ -8,6 +8,7 @@ import { ShareTokenJWT } from "../types";
 import { logger } from "../utils/logger";
 import { Group } from "../entity/Group";
 import * as argon2 from "argon2";
+import { CreateSessionQueryType } from "../validators/session";
 
 async function validateToken(token: string): Promise<Share | Group> {
     const decoded = jwt.verify(token, environment.jwtSecret) as ShareTokenJWT;
@@ -48,13 +49,13 @@ async function validateToken(token: string): Promise<Share | Group> {
     }
 }
 
-export async function createSession(shareToken: string) {
+export async function createSession(query: CreateSessionQueryType) {
     logger.debug(`Creating new session`);
 
-    const shareOrGroup = await validateToken(shareToken);
+    const shareOrGroup = await validateToken(query.token);
 
     const sessionTokenRepository = AppDataSource.getRepository(Session);
-    const [session, token] = Session.factory(shareOrGroup);
+    const [session, token] = Session.factory(shareOrGroup, query.name);
 
     await sessionTokenRepository.save(session);
 

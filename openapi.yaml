@@ -135,6 +135,9 @@ paths:
             schema:
               type: object
               properties:
+                name:
+                  description: The name of the share token
+                  type: string
                 admin:
                   description: If true, the share token can be used to create a new admin session
                   type: boolean
@@ -150,6 +153,9 @@ paths:
               schema:
                 type: object
                 properties:
+                  name:
+                    description: The name of the share token
+                    type: string
                   token:
                     description: The share token that can be used to access the group
                     type: string
@@ -309,6 +315,9 @@ paths:
             schema:
               type: object
               properties:
+                name:
+                  description: The name of the session
+                  type: string
                 token:
                   description: The share token that can be used to access the group. This can either be a share token or an recovery token. If the share token has admin rights, a new admin session is created.
                   type: string

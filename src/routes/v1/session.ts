@@ -3,13 +3,21 @@ import h from '../../utils/errorHelper'
 import { createSession, deleteSession, getSessions } from '../../models/session';
 import { adminAuth } from '../../middleware/auth';
 import { Session } from '../../entity/Session';
+import { assert } from 'superstruct';
+import { createSessionQuery } from '../../validators/session';
+import APIError from '../../utils/apiError';
 
 const router = express.Router()
 
 router.post("/", h(async (req, res) => {
-    const token = req.body.token;
 
-    const [session, sessionToken] = (await createSession(token)) as [Session, string];
+    try {
+        assert(req.body, createSessionQuery);
+    } catch (error) {
+        throw APIError.badRequest(error);
+    }
+
+    const [session, sessionToken] = (await createSession(req.body)) as [Session, string];
 
     delete session.group.recoveryToken;
     delete session.share;
