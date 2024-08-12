@@ -11,7 +11,7 @@ router.post("/", h(async (req, res) => {
 
     const [session, sessionToken] = (await createSession(token)) as [Session, string];
 
-    delete session.group;
+    delete session.group.recoveryToken;
     delete session.share;
 
     res.status(201).json({
