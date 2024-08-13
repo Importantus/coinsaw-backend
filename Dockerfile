@@ -15,7 +15,7 @@ RUN npm ci
 # Bundle app source
 COPY . .
 
-CMD [ "npm", "run", "build" ]
+RUN npm run build
 
 FROM node:20.11.0 as run
 
