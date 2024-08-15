@@ -23,6 +23,9 @@ export async function getDataFromGroup(groupId: string, query: getDataQueryType)
                 id: groupId
             },
             syncTimestamp: Between(startDate, endDate)
+        },
+        order: {
+            creationTimestamp: "DESC"
         }
     });
 
