@@ -32,7 +32,13 @@ router.get("/", adminAuth, h(async (req, res) => {
 
     const sessions = await getSessions(res.locals.groupId);
 
-    res.status(200).json(sessions);
+    res.status(200).json(sessions.map((session) => {
+        return {
+            ...session,
+            creationTimestamp: session.creation_timestamp.getTime(),
+            last_active_timestamp: session.last_active_timestamp.getTime()
+        }
+    }));
 }));
 
 // TODO: Allow users to delete their own session
