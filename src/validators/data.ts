@@ -13,5 +13,11 @@ export const getDataQuery = s.object({
     to: s.optional(timestamp),
 });
 
+export const syncDataQuery = s.object({
+    lastSync: timestamp,
+    data: s.array(s.any())
+})
+
 export type getDataQueryType = s.Infer<typeof getDataQuery>;
+export type syncDataQueryType = s.Infer<typeof syncDataQuery>;
 
