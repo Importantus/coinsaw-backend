@@ -13,6 +13,17 @@
                 "format": "uuid",
                 "description": "The unique identifier of the change. It should be a UUID created by the client."
             },
+            "version": {
+                "type": "number",
+                "description": "The version of the change log entry schema. It is used to handle breaking changes in the schema.",
+                "default": 1
+            },
+            "dependentOn": {
+                "description": "The id of the change that this change depends on. That is only needed for changes with the action UPDATE to ensure the correct order of changes when applying them.",
+                "type": "string",
+                "format": "uuid",
+                "default": null
+            },
             "groupId": {
                 "type": "string",
                 "format": "uuid",
@@ -100,8 +111,7 @@
                                 "amount": {
                                     "type": "number",
                                     "minimum": 0,
-                                    "multipleOf": 0.01,
-                                    "description": "The amount of the bill. It should be a positive number and only contain two decimal places."
+                                    "description": "The amount of the bill. It should be a positive number representing the total amount in the smallest currency unit (e.g., cents)."
                                 },
                                 "isDeleted": {
                                     "type": "boolean",
@@ -125,12 +135,19 @@
                                             "percentage": {
                                                 "type": "number",
                                                 "minimum": 0,
-                                                "maximum": 1
+                                                "maximum": 1,
+                                                "deprecated": true,
+                                                "description": "The percentage of the bill that the user has to pay. This field is deprecated and will be removed in future versions. Use 'amount' instead."
+                                            },
+                                            "amount": {
+                                                "type": "number",
+                                                "minimum": 0,
+                                                "description": "The absolute amount of the bill that the user has to pay in the smallest currency unit (e.g., cents). This field should be used instead of 'percentage'."
                                             }
                                         },
                                         "required": [
                                             "userId",
-                                            "percentage"
+                                            "amount"
                                         ]
                                     }
                                 }
