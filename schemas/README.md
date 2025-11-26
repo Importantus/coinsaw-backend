@@ -7,4 +7,5 @@ This document provides an overview of the `changelog.json` schema used in the Co
 ### Version 1
 - **Bill Amount Field Update**: The `amount` field in the bill object has been updated to remove the `multipleOf` constraint and now includes a description clarifying that it should represent the total amount in the smallest currency unit (e.g., cents).
 - **User Share Fields Update**: The `percentage` field in the user share object has been marked as deprecated, with a new `amount` field added. The `amount` field is intended to represent the absolute amount of the bill that the user has to pay, also in the smallest currency unit. The `percentage` field will be removed in future versions.
+- **DependentOn Field**: The `dependentOn` field in the bill object has been added to indicate if an entry is dependent on another entry. This field is only used by UPDATE operations, to specify which entry the update is dependent on.
 - **Versioning**: A `version` field has been added to the schema to track the version of the changelog entry.

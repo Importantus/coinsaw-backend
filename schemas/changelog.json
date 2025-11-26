@@ -11,7 +11,7 @@
             "id": {
                 "type": "string",
                 "format": "uuid",
-                "description": "The unique identifier of the change. It should be a UUID created by the client."
+                "description": "The unique identifier of the change. It should be a UUID created by the client. For the entry that describes a newly created group, this id should be the id of the group itself."
             },
             "version": {
                 "type": "number",
